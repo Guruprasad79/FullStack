@@ -1,36 +1,60 @@
 const express = require("express");
+const app = express();
 const https = require("https");
 const bodyParser = require("body-parser");
-const app = express();
-
-app.use(bodyParser.urlencoded({extended:true}));
+app.use(bodyParser.urlencoded({extended: true}));
 
 app.get("/", function(req,res){
-    res.sendFile(__dirname + "/index.html");
+    res.sendFile(__dirname + "/signup.html");
 });
 
 app.post("/", function(req,res){
-    const query = req.body.city;
-    const appid = "18c9de79170248cb83f247c773597e22";
-    const unit = "metric";
-    const url = "https://api.openweathermap.org/data/2.5/weather?q=" + query + "&appid=" + appid + "&units=" + unit;
-    https.get(url,function(response){
-        console.log(response.statusCode);
-        response.on("data", function(data){
-            const weatherData = JSON.parse(data); //JSON.stringify to the save space
+    const fName = req.body.fName;
+    const lName = req.body.lName;
+    const email = req.body.email;
 
-            const temperature = weatherData.main.temp;
-            const weatherDescription = weatherData.weather[0].description;
-            const imgIcon = weatherData.weather[0].icon;
-            const url = "http://openweathermap.org/img/wn/" + imgIcon + "@2x.png";
-            res.write("<p>The weather is currently " + weatherDescription + "</p>");
-            res.write("<h1>The temperature in " + query + " is " + temperature + " degree Celcuis.</h1>");
-            res.write("<img src=" + url +"></img>");
-            res.send();
-        });
+    const data = {
+        members: [
+            {
+                email_address: email,
+                status: "subscribed",
+                merge_fields: {
+                    FNAME: fName,
+                    LNAME: lName
+                }
+            }
+        ]
+    };
+
+    const jsonData = JSON.stringify(data);
+
+    const url = "https://usX.api.mailchimp.com/3.0/lists/{listed-ID"; //X should be repaced by last digit of your API Key
+
+    const options = {
+        method: "POST",
+        auth: "Guru(can you give any user name):API Key"
+    }
+
+    const request = https.request(url, options, function(response){
+
+        if(response.statusCode ===200){
+            res.sendFile(__dirname + "/success.html");
+        }else {
+            res.sendFile(__dirname + "/failure.html");
+        }
+        response.on("data", function(data){
+            console.log(JSON.parse(data));
+        })
     });
+
+    request.write(jsonData);
+    request.end();
 });
 
-app.listen(3000,function(){
-    console.log("Server is running at port number 3000.");
+app.post("/failure", function(req,res){
+    res.redirect("/");
+});
+
+app.listen(process.end.PORT || 3000, function(){
+    console.log("Server is running on port 3000");
 });
